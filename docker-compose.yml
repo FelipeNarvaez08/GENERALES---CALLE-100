@@ -1,0 +1,42 @@
+services:
+  auditoria-polizas:
+    build: .
+    container_name: auditoria-polizas
+    expose:
+      - "8501"
+    restart: unless-stopped
+    environment:
+      OLLAMA_BASE_URL: "http://ollama:11434"
+    # Sin puerto público directo. Caddy sirve HTTPS y Basic Auth.
+
+  caddy:
+    image: caddy:2
+    container_name: auditoria-polizas-caddy
+    profiles: ["web"]
+    env_file: .env
+    depends_on:
+      - auditoria-polizas
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: auditoria-polizas-ollama
+    profiles: ["ai"]
+    volumes:
+      - ollama_data:/root/.ollama
+    expose:
+      - "11434"
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+  ollama_data:
